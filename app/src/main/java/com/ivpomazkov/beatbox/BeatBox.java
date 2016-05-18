@@ -1,7 +1,11 @@
 package com.ivpomazkov.beatbox;
 
 import android.content.Context;
+import android.content.Intent;
+import android.content.res.AssetFileDescriptor;
 import android.content.res.AssetManager;
+import android.media.AudioManager;
+import android.media.SoundPool;
 import android.util.Log;
 
 import java.io.IOException;
@@ -14,12 +18,16 @@ import java.util.List;
 public class BeatBox {
     private static final String TAG = "BeatBox";
     private static final String SOUNDS_FOLDER = "sample_sounds";
-    private List<Sound> mSounds = new ArrayList<>();
+    private static final int MAX_SOUNDS = 5;
 
+    private List<Sound> mSounds = new ArrayList<>();
     private AssetManager mAssets;
+    private SoundPool mSoundPool;
+
 
     public BeatBox(Context context){
         mAssets = context.getAssets();
+        mSoundPool = new SoundPool(MAX_SOUNDS, AudioManager.STREAM_MUSIC, 0);
         loadSounds();
     }
 
@@ -34,9 +42,14 @@ public class BeatBox {
         }
 
         for ( String fileName : soundNames ){
-            String assethPath = SOUNDS_FOLDER + "/" + fileName;
-            Sound sound = new Sound(assethPath);
-            mSounds.add(sound);
+            try {
+                String assethPath = SOUNDS_FOLDER + "/" + fileName;
+                Sound sound = new Sound(assethPath);
+                load(sound);
+                mSounds.add(sound);
+            } catch (IOException e){
+                Log.e("error", "Couldn't load file " + fileName, e);
+            }
         }
 
     }
@@ -44,4 +57,12 @@ public class BeatBox {
     public List<Sound> getSounds() {
         return mSounds;
     }
+
+    private void load(Sound sound) throws IOException{
+        AssetFileDescriptor afd = mAssets.openFd(sound.getAssetPath());
+        int soundId = mSoundPool.load(afd, 1);
+        sound.setSoundId(soundId);
+    }
+
+
 }
